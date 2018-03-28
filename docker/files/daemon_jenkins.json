@@ -1,5 +1,4 @@
 {
-  "log-driver": "syslog",
   "storage-driver": "devicemapper",
   "storage-opts": [ 
     "dm.use_deferred_deletion=true",
