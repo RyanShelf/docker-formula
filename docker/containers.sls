@@ -21,7 +21,10 @@ docker-image-{{ name }}-retry:
 
 docker-container-startup-config-{{ name }}:
   file.managed:
-{%- if init_system == "systemd" %}
+{%- if init_system == "systemd" and grains['project'] == "redshelf-dock" and grains['roles'] == "processor" %}
+    - name: /etc/systemd/system/docker-{{ name }}.service
+    - source: salt://docker/files/systemd_processor.conf
+{%- elif init_system == "systemd" %}
     - name: /etc/systemd/system/docker-{{ name }}.service
     - source: salt://docker/files/systemd.conf
 {%- elif init_system == "upstart" %}
