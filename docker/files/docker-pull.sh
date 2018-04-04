@@ -10,5 +10,5 @@ if [[ "$PULL" == *$STRING* ]]; then
   echo "changed=yes comment='New image has been pulled'"
 else
   echo "" 
-  echo "changed=no comment='No new image has been pulled"
+  echo "changed=no comment='No new image has been pulled'"
 fi
