@@ -4,6 +4,7 @@ include:
   - docker
 
 {% for name, container in containers.items() %}
+{%- if name != "redshelf-nginx" %}
 docker-image-{{ name }}:
   cmd.run:
     - name: docker pull {{ container.image }}
@@ -15,6 +16,7 @@ docker-image-{{ name }}-retry:
     - name: sleep 20 && docker pull {{ container.image }}
     - onfail:
       - cmd: docker-image-{{ name }}
+{%- endif %}
 
 {# TODO: SysV init script #}
 {%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
