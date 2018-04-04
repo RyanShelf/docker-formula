@@ -3,20 +3,26 @@
 include:
   - docker
 
+docker-pull-script:
+  file.managed:
+    - name: /root/docker-pull.sh
+    - source: salt://docker/files/docker-pull.sh
+    - mode: 755
+
 {% for name, container in containers.items() %}
-{%- if name != "redshelf-nginx" %}
 docker-image-{{ name }}:
   cmd.run:
-    - name: docker pull {{ container.image }}
+    - name: /root/docker-pull.sh {{ container.image }}
+    - stateful: True
     - require:
       - service: docker-service
-    - 
+      - file: docker-pull-script
+
 docker-image-{{ name }}-retry:
   cmd.run:
     - name: sleep 20 && docker pull {{ container.image }}
     - onfail:
       - cmd: docker-image-{{ name }}
-{%- endif %}
 
 {# TODO: SysV init script #}
 {%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
