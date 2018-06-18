@@ -200,6 +200,7 @@ docker-thinpool-profile:
   file.managed:
     - name: /etc/lvm/profile/docker-thinpool.profile
     - source: salt://docker/files/docker-thinpool.profile
+    - makedirs: True
     - watch:
       - cmd: lvconvert
 
