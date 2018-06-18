@@ -4,6 +4,9 @@ include:
   - .kernel
 {% endif %}
 
+{%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
+{%- set datacenter = salt["cmd.run"]("bash -c 'hostname -d | grep -q ec2 && echo aws || echo linode'") %}
+
 docker package dependencies:
   pkg.installed:
     - pkgs:
@@ -110,8 +113,6 @@ docker package:
       {%- endif %}
       - file: docker-config
 
-{%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
-{%- set datacenter = salt["cmd.run"]("bash -c 'hostname -d | grep -q ec2 && echo aws || echo linode'") %}
 
 docker-config:
 {%- if init_system == "upstart" %}
@@ -138,6 +139,16 @@ docker-config:
     - mode: 644
     - user: root
     - makedirs: True
+    - require:
+      - cmd: pvcreate
+      - cmd: vgcreate
+      - cmd: lvcreate-1
+      - cmd: lvcreate-2
+      - cmd: lvconvert
+      - file: docker-thinpool-profile
+      - cmd: lvchange
+      - cmd: lvs
+      - cmd: cleanup-docker
 {%- elif init_system == "systemd" and datacenter == "linode" %}
   file.managed:
     - name: /etc/docker/daemon.json
@@ -157,17 +168,9 @@ docker-config:
 {%- endif %}      
 
 {%- if init_system == "systemd" and datacenter == "aws" %}
-stop-docker:
-  service.dead:
-    - name: docker
-    - watch:
-      - file: docker-config
-
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
-    - service:
-      - file: stop-docker
 
 vgcreate:
   cmd.run:
@@ -228,7 +231,7 @@ docker-service:
     {%- if init_system == "upstart" %}
       - file: /etc/default/docker
     {%- elif init_system == "systemd" and datacenter == "aws" %}
-      - cmd: cleanup-docker
+      - file: /etc/docker/daemon.json
     {%- elif init_system == "systemd" and datacenter == "linode" %}
       - file: /etc/docker/daemon.json
     {%- endif %}
