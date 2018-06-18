@@ -161,68 +161,62 @@ stop-docker:
   service.dead:
     - name: docker
     - watch:
-      - file: /etc/docker/daemon.json
+      - file: docker-config
 
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
-    - require:
-      - service: stop-docker
+    - service:
+      - file: stop-docker
 
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
-    - require:
+    - watch:
       - cmd: pvcreate
 
 lvcreate-1:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG
-    - require:
+    - watch:
       - cmd: vgcreate
 
 lvcreate-2:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
-    - require:
+    - watch:
       - cmd: lvcreate-1
 
 lvconvert:
   cmd.run: 
     - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
-    - require:
+    - watch:
       - cmd: lvcreate-2
 
 docker-thinpool-profile:
   file.managed:
     - name: /etc/lvm/profile/docker-thinpool.profile
     - source: salt://docker/files/docker-thinpool.profile
-    - require:
+    - watch:
       - cmd: lvconvert
 
 lvchange:
   cmd.run:
     - name: lvchange --metadataprofile docker-thinpool docker/thinpool
-    - require:
+    - watch:
       - file: docker-thinpool-profile
 
 lvs:
   cmd.run:
     - name: lvs -o+seg_monitor
-    - require:
+    - watch:
       - cmd: lvchange
 
 cleanup-docker:
   cmd.run:
     - name: rm -rf /var/lib/docker && mkdir /var/lib/docker
-    - require:
+    - watch:
       - cmd: lvs
-
-start-docker:
-  service.running:
-    - name: docker
-    - require:
-      - cmd: cleanup-docker
 {%- endif %}      
     
 
@@ -234,7 +228,7 @@ docker-service:
     {%- if init_system == "upstart" %}
       - file: /etc/default/docker
     {%- elif init_system == "systemd" and datacenter == "aws" %}
-      - service: start-docker
+      - cmd: cleanup-docker
     {%- elif init_system == "systemd" and datacenter == "linode" %}
       - file: /etc/docker/daemon.json
     {%- endif %}
