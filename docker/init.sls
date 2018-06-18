@@ -176,40 +176,35 @@ pvcreate:
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
-    - watch:
-      - cmd: pvcreate
+    - unless: lsblk | grep docker || false
+
 
 lvcreate-1:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG
-    - watch:
-      - cmd: vgcreate
+    - unless: lsblk | grep docker || false
 
 lvcreate-2:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
-    - watch:
-      - cmd: lvcreate-1
+    - unless: lsblk | grep docker || false
+
 
 lvconvert:
   cmd.run: 
     - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
-    - watch:
-      - cmd: lvcreate-2
+    - unless: lsblk | grep docker || false
 
 docker-thinpool-profile:
   file.managed:
     - name: /etc/lvm/profile/docker-thinpool.profile
     - source: salt://docker/files/docker-thinpool.profile
     - makedirs: True
-    - watch:
-      - cmd: lvconvert
 
 lvchange:
   cmd.run:
     - name: lvchange --metadataprofile docker-thinpool docker/thinpool
-    - watch:
-      - file: docker-thinpool-profile
+    - unless: lsblk | grep docker || false
 
 lvs:
   cmd.run:
@@ -220,8 +215,8 @@ lvs:
 cleanup-docker:
   cmd.run:
     - name: rm -rf /var/lib/docker && mkdir /var/lib/docker
-    - watch:
-      - cmd: lvs
+    - unless: lsblk | grep docker || false
+
 {%- endif %}      
     
 
