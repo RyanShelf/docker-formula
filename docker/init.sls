@@ -182,13 +182,13 @@ vgcreate:
 
 lvcreate-1:
   cmd.run:
-    - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+    - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG || echo "already created"
     - require:
       - cmd: vgcreate
 
 lvcreate-2:
   cmd.run:
-    - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+    - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG || echo "already created"
     - require:
       - cmd: lvcreate-1
 
