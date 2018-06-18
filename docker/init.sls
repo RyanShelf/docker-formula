@@ -177,45 +177,57 @@ vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
     - unless: lsblk | grep docker || false
-
+    - require:
+      - cmd: pvcreate
 
 lvcreate-1:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG
     - unless: lsblk | grep docker || false
+    - require:
+      - cmd: vgcreate
 
 lvcreate-2:
   cmd.run:
     - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
     - unless: lsblk | grep docker || false
-
+    - require:
+      - cmd: lvcreate-1
 
 lvconvert:
   cmd.run: 
     - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
     - unless: lsblk | grep docker || false
+    - require:
+      - cmd: lvcreate-2
 
 docker-thinpool-profile:
   file.managed:
     - name: /etc/lvm/profile/docker-thinpool.profile
     - source: salt://docker/files/docker-thinpool.profile
     - makedirs: True
+    - require:
+      - cmd: lvconvert
 
 lvchange:
   cmd.run:
     - name: lvchange --metadataprofile docker-thinpool docker/thinpool
     - unless: lsblk | grep docker || false
+    - require:
+      - file: docker-thinpool-profile
 
 lvs:
   cmd.run:
     - name: lvs -o+seg_monitor
-    - watch:
-      - cmd: lvchange
+    - require:
+      - file: docker-thinpool-profile
 
 cleanup-docker:
   cmd.run:
     - name: rm -rf /var/lib/docker && mkdir /var/lib/docker
     - unless: lsblk | grep docker || false
+    - require:
+      - cmd: lvs
 
 {%- endif %}      
     
