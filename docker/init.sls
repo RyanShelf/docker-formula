@@ -208,7 +208,8 @@ docker-thinpool-profile:
 
 lvchange:
   cmd.run:
-    - name: lvchange --metadataprofile docker-thinpool docker/thinpool || echo "already created"
+    - name: lvchange --metadataprofile docker-thinpool docker/thinpool"
+    - unless: lvdisplay | grep metadata
     - require:
       - file: docker-thinpool-profile
 
