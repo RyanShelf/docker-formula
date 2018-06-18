@@ -171,6 +171,7 @@ docker-config:
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
+    - unless: lsblk | grep docker || false
 
 vgcreate:
   cmd.run:
