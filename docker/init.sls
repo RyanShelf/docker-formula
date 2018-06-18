@@ -171,30 +171,33 @@ docker-config:
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
-    - unless: pvdisplay | grep xvdb
+    - unless: test -e /root/directlvm_created
 
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
-    - unless: vgdisplay | grep docker
+    - unless: test -e /root/directlvm_created
     - require:
       - cmd: pvcreate
 
 lvcreate-1:
   cmd.run:
-    - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG || echo "already created"
+    - name: lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+    - unless: test -e /root/directlvm_created
     - require:
       - cmd: vgcreate
 
 lvcreate-2:
   cmd.run:
-    - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG || echo "already created"
+    - name: lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+    - unless: test -e /root/directlvm_created
     - require:
       - cmd: lvcreate-1
 
 lvconvert:
   cmd.run: 
-    - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta || echo "already created"
+    - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+    - unless: test -e /root/directlvm_created
     - require:
       - cmd: lvcreate-2
 
@@ -209,20 +212,21 @@ docker-thinpool-profile:
 lvchange:
   cmd.run:
     - name: lvchange --metadataprofile docker-thinpool docker/thinpool"
-    - unless: lvdisplay | grep metadata
+    - unless: test -e /root/directlvm_created
     - require:
       - file: docker-thinpool-profile
 
 lvs:
   cmd.run:
     - name: lvs -o+seg_monitor
+    - unless: test -e /root/directlvm_created
     - require:
       - file: docker-thinpool-profile
 
 cleanup-docker:
   cmd.run:
-    - name: rm -rf /var/lib/docker && mkdir /var/lib/docker
-    - unless: df -ah | grep /var/lib/docker
+    - name: rm -rf /var/lib/docker && mkdir /var/lib/docker && touch /root/directlvm_created
+    - unless: test -e /root/directlvm_created
     - require:
       - cmd: lvs
 
