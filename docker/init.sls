@@ -171,12 +171,13 @@ docker-config:
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
-    - unless: lsblk | grep -q docker
+    - unless: pvdisplay | grep xvdb
 
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
-    - watch:
+    - unless: vgdisplay | grep docker
+    - require:
       - cmd: pvcreate
 
 lvcreate-1:
