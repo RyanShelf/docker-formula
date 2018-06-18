@@ -221,6 +221,7 @@ lvs:
 cleanup-docker:
   cmd.run:
     - name: rm -rf /var/lib/docker && mkdir /var/lib/docker
+    - unless: df -ah | grep /var/lib/docker
     - require:
       - cmd: lvs
 
