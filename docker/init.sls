@@ -176,7 +176,7 @@ pvcreate:
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
-    - require:
+    - watch:
       - cmd: pvcreate
 
 lvcreate-1:
