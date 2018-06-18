@@ -194,7 +194,7 @@ lvcreate-2:
 
 lvconvert:
   cmd.run: 
-    - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+    - name: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta || echo "already created"
     - require:
       - cmd: lvcreate-2
 
@@ -208,7 +208,7 @@ docker-thinpool-profile:
 
 lvchange:
   cmd.run:
-    - name: lvchange --metadataprofile docker-thinpool docker/thinpool
+    - name: lvchange --metadataprofile docker-thinpool docker/thinpool || echo "already created"
     - require:
       - file: docker-thinpool-profile
 
