@@ -167,7 +167,7 @@ docker-config:
     - makedirs: True
 {%- endif %}      
 
-{%- if init_system == "systemd" and datacenter == "aws" %}
+{%- if init_system == "systemd" and datacenter == "aws" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
