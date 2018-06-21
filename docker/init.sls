@@ -131,7 +131,7 @@ docker-config:
     - mode: 644
     - user: root
     - makedirs: True
-{%- elif init_system == "systemd" and datacenter == "aws" %}
+{%- elif init_system == "systemd" and datacenter == "aws" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
   file.managed:
     - name: /etc/docker/daemon.json
     - source: salt://docker/files/daemon_devicemapper.json
