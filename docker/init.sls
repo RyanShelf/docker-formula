@@ -5,7 +5,6 @@ include:
 {% endif %}
 
 {%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
-{%- set datacenter = salt["cmd.run"]("bash -c 'hostname -d | grep -q ec2 && echo aws || echo linode'") %}
 {%- set docker_ssd = salt["cmd.run"]("bash -c '(lsblk | grep -o nvme1n1) || (lsblk | grep -o xvdb)'") %}
 
 docker package dependencies:
@@ -132,7 +131,7 @@ docker-config:
     - mode: 644
     - user: root
     - makedirs: True
-{%- elif init_system == "systemd" and datacenter == "aws" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
+{%- elif init_system == "systemd" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
   file.managed:
     - name: /etc/docker/daemon.json
     - source: salt://docker/files/daemon_devicemapper.json
@@ -150,25 +149,9 @@ docker-config:
       - cmd: lvchange
       - cmd: lvs
       - cmd: cleanup-docker
-{%- elif init_system == "systemd" and datacenter == "linode" %}
-  file.managed:
-    - name: /etc/docker/daemon.json
-    - source: salt://docker/files/daemon_overlay2.json
-    - template: jinja
-    - mode: 644
-    - user: root
-    - makedirs: True
-{%- else %}
-  file.managed:
-    - name: /etc/docker/daemon.json
-    - source: salt://docker/files/daemon_overlay2.json
-    - template: jinja
-    - mode: 644
-    - user: root
-    - makedirs: True
 {%- endif %}      
 
-{%- if init_system == "systemd" and datacenter == "aws" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
+{%- if init_system == "systemd" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
 {%- if docker_ssd == "xvdb" %}
 pvcreate:
   cmd.run:
@@ -249,9 +232,7 @@ docker-service:
     - watch:
     {%- if init_system == "upstart" %}
       - file: /etc/default/docker
-    {%- elif init_system == "systemd" and datacenter == "aws" %}
-      - file: /etc/docker/daemon.json
-    {%- elif init_system == "systemd" and datacenter == "linode" %}
+    {%- elif init_system == "systemd" %}
       - file: /etc/docker/daemon.json
     {%- endif %}
       - pkg: docker package
