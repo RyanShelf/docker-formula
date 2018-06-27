@@ -6,7 +6,7 @@ include:
 
 {%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
 {%- set datacenter = salt["cmd.run"]("bash -c 'hostname -d | grep -q ec2 && echo aws || echo linode'") %}
-{%- set docker_ssd = salt["cmd.run"]("bach -c '(lsblk | grep -o nvme1n1) || (lsblk | grep -o xvdb)'") %}
+{%- set docker_ssd = salt["cmd.run"]("bash -c '(lsblk | grep -o nvme1n1) || (lsblk | grep -o xvdb)'") %}
 
 docker package dependencies:
   pkg.installed:
