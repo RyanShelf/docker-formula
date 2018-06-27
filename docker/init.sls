@@ -6,6 +6,7 @@ include:
 
 {%- set init_system = salt["cmd.run"]("bash -c 'ps -p1 | grep -q systemd && echo systemd || echo upstart'") %}
 {%- set datacenter = salt["cmd.run"]("bash -c 'hostname -d | grep -q ec2 && echo aws || echo linode'") %}
+{%- set docker_ssd = salt["cmd.run"]("bach -c '(lsblk | grep -o nvme1n1) || (lsblk | grep -o xvdb)'") %}
 
 docker package dependencies:
   pkg.installed:
@@ -168,17 +169,29 @@ docker-config:
 {%- endif %}      
 
 {%- if init_system == "systemd" and datacenter == "aws" and grains['project'] != "jenkins" and grains['roles'] != "slave" %}
+{%- if docker_ssd == "xvdb" %}
 pvcreate:
   cmd.run:
     - name: pvcreate /dev/xvdb
     - unless: pvdisplay | grep xvdb
-
 vgcreate:
   cmd.run:
     - name: vgcreate docker /dev/xvdb
     - unless: vgdisplay | grep docker
     - require:
       - cmd: pvcreate
+{%- elif docker_ssd == "nvme1n1" %}
+pvcreate:
+  cmd.run:
+    - name: pvcreate /dev/nvme1n1
+    - unless: pvdisplay | grep nvme1n1
+vgcreate:
+  cmd.run:
+    - name: vgcreate docker /dev/nvme1n1
+    - unless: vgdisplay | grep docker
+    - require:
+      - cmd: pvcreate
+{%- endif %}
 
 lvcreate-1:
   cmd.run:
